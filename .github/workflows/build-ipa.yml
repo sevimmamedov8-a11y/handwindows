@@ -1,0 +1,69 @@
+name: Build HandAR Vision IPA — V22
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Show Xcode and project targets
+        run: |
+          xcodebuild -version
+          xcodebuild -project HandARBrowser.xcodeproj -list
+
+      - name: Validate project files
+        run: |
+          chmod +x Scripts/CHECK_PROJECT.command Scripts/BUILD_UNSIGNED_IPA.command
+          ./Scripts/CHECK_PROJECT.command
+          grep -Fq "HandAR Vision" HandARBrowser/Info.plist
+          grep -Fq "import ARKit" HandARBrowser/MainViewController.swift
+          grep -Fq "import RealityKit" HandARBrowser/MainViewController.swift
+          grep -Fq "ARWorldTrackingConfiguration" HandARBrowser/MainViewController.swift
+          grep -Fq "final class MainMenuView" HandARBrowser/MainViewController.swift
+          grep -Fq "ВОЙТИ В AR" HandARBrowser/MainViewController.swift
+          grep -Fq "final class LensMaskView" HandARBrowser/MainViewController.swift
+          grep -Fq "displayTransform(for: orientation" HandARBrowser/MainViewController.swift
+          grep -Fq "projectWorldPoint" HandARBrowser/MainViewController.swift
+          grep -Fq ".camera.projectPoint" HandARBrowser/MainViewController.swift
+          grep -Fq "simd_normalize(SIMD3<Float>" HandARBrowser/MainViewController.swift
+          ! grep -Fq "normalized(SIMD3<Float>" HandARBrowser/MainViewController.swift
+          grep -Fq "browserWorldWidth: Float = 0.62" HandARBrowser/MainViewController.swift
+          grep -Fq "AnchorEntity(world: anchorTransform)" HandARBrowser/MainViewController.swift
+          grep -Fq "tracking.addAnchor(transform: anchorTransform)" HandARBrowser/MainViewController.swift
+          grep -Fq "setWorldQuadrilateral" HandARBrowser/MainViewController.swift
+          grep -Fq "eyeSeparation: Float = 0.062" HandARBrowser/MainViewController.swift
+          ! grep -Fq "let half = view.bounds.height / 2" HandARBrowser/MainViewController.swift
+          grep -Fq "adaptiveAlpha" HandARBrowser/MainViewController.swift
+          grep -Fq "pinchHysteresis" HandARBrowser/MainViewController.swift
+          ! grep -Fq "handleEdgeControl" HandARBrowser/MainViewController.swift
+          ! grep -Fq "browserNudge" HandARBrowser/MainViewController.swift
+
+      - name: Build iPhoneOS app (unsigned)
+        run: ./Scripts/BUILD_UNSIGNED_IPA.command
+
+      - name: Verify IPA structure
+        run: |
+          test -f build/HandARBrowser-unsigned.ipa
+          /usr/bin/unzip -l build/HandARBrowser-unsigned.ipa | grep -E 'Payload/HandARBrowser.app/' >/dev/null
+          /usr/bin/unzip -p build/HandARBrowser-unsigned.ipa Payload/HandARBrowser.app/Info.plist >/dev/null
+          echo "IPA OK"
+          /usr/bin/unzip -p build/HandARBrowser-unsigned.ipa Payload/HandARBrowser.app/Info.plist | grep -Fq "HandAR Vision"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HandARBrowser-IPA
+          path: build/HandARBrowser-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
