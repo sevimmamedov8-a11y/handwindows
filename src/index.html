@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob:; media-src 'self' blob:; img-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https: blob:; worker-src 'self' blob:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HandARBrowser Windows</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <video id="camera" autoplay muted playsinline></video>
+  <canvas id="overlay"></canvas>
+  <div id="shade"></div>
+
+  <header class="hud glass">
+    <div class="brand">● HandARBrowser Windows</div>
+    <div id="status">Запуск...</div>
+    <div class="address-wrap">
+      <input id="address" value="https://www.google.com/" spellcheck="false" />
+      <button id="go">GO</button>
+    </div>
+  </header>
+
+  <div class="browser-frame glass-outline" aria-hidden="true"></div>
+
+  <section class="hint glass">
+    <div><b>☝</b> Наведи указатель</div>
+    <div><b>🤏</b> Pinch = клик</div>
+    <div><b>↕</b> Pinch + движение = прокрутка</div>
+  </section>
+
+  <footer class="controls glass">
+    <button id="center">CENTER</button>
+    <button id="hand">✋ HAND</button>
+    <button id="left">←</button>
+    <button id="right">→</button>
+    <button id="keyboard">⌨</button>
+    <span id="debug">0 FPS</span>
+  </footer>
+
+  <div id="virtual-keyboard" class="keyboard glass hidden"></div>
+  <div id="error" class="error glass hidden"></div>
+
+  <script type="module" src="./renderer.js"></script>
+</body>
+</html>
