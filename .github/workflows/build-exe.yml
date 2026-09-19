@@ -1,0 +1,64 @@
+name: Build HandARBrowser Windows EXE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Check project files
+        shell: pwsh
+        run: |
+          $required = @(
+            'package.json',
+            'src/main.js',
+            'src/preload.js',
+            'src/index.html',
+            'src/styles.css',
+            'src/renderer.js'
+          )
+          foreach ($f in $required) { if (-not (Test-Path $f)) { throw "Missing file: $f" } }
+          node --check src/main.js
+          node --check src/preload.js
+          node --check src/renderer.js
+          Write-Host 'Preflight OK'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build Windows portable EXE
+        run: npm run dist:portable
+
+      - name: Verify EXE
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path dist -Filter '*.exe' | Select-Object -First 1
+          if ($null -eq $exe) { throw 'No EXE produced' }
+          if ($exe.Length -lt 50000000) { throw "EXE looks unexpectedly small: $($exe.Length) bytes" }
+          Write-Host "EXE: $($exe.FullName)"
+          Get-FileHash $exe.FullName -Algorithm SHA256 | Format-List
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: HandARBrowser-Windows-EXE
+          path: dist/*.exe
+          if-no-files-found: error
+          retention-days: 14
